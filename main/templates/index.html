@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能体动物医院</title>
+    <link rel="stylesheet" href="/static/veta.css?v=43">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏遮罩层 -->
+        <div class="sidebar-overlay"></div>
+        
+        <!-- 左侧任务栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="app-title">
+                    <i class="fas fa-paw"></i>
+                    <span>智能体动物医院</span>
+                </div>
+                <button id="new-task-btn" class="new-task-btn">
+                    <i class="fas fa-plus"></i>
+                    新任务
+                </button>
+            </div>
+            
+            <div class="mode-selector">
+                <div class="mode-option" data-mode="animal">
+                    <i class="fas fa-hospital"></i>
+                    <span>模拟问诊</span>
+                </div>
+                <div class="mode-option active" data-mode="vet">
+                    <i class="fas fa-user-md"></i>
+                    <span>兽医问答</span>
+                </div>
+            </div>
+
+            <div class="task-list">
+                <div class="task-section">
+                    <h3>今天</h3>
+                    <div id="today-tasks" class="tasks"></div>
+                </div>
+                <div class="task-section">
+                    <h3>昨天</h3>
+                    <div id="yesterday-tasks" class="tasks"></div>
+                </div>
+                <div class="task-section">
+                    <h3>过去7天</h3>
+                    <div id="week-tasks" class="tasks"></div>
+                </div>
+            </div>
+            
+            <!-- 清理所有任务按钮 -->
+            <div class="sidebar-footer">
+                <button id="clear-all-tasks-btn" class="clear-all-btn">
+                    <i class="fas fa-trash-alt"></i>
+                    清理所有任务
+                </button>
+            </div>
+        </aside>
+
+        <!-- 右侧聊天区域 -->
+        <main class="chat-area">
+            <div class="chat-header">
+                <!-- 汉堡菜单按钮（仅移动端显示） -->
+                <button id="menu-toggle" class="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <div class="current-mode">
+                    <i id="mode-icon" class="fas fa-user-md"></i>
+                    <span id="mode-name">兽医模式</span>
+                </div>
+                <div class="chat-actions">
+                    <button id="share-btn" class="action-btn">
+                        <i class="fas fa-share"></i>
+                    </button>
+                    <div class="user-menu">
+                        <button id="user-menu-btn" class="action-btn">
+                            <i class="fas fa-user"></i>
+                            <span id="current-user-display"></span>
+                        </button>
+                        <div id="user-dropdown" class="user-dropdown hidden">
+                            <div class="dropdown-header">
+                                <i class="fas fa-user-circle"></i>
+                                <span id="dropdown-user-name"></span>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <button id="logout-btn" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i>
+                                退出登录
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div id="chat-window" class="chat-messages"></div>
+                
+                <form id="chat-form" class="chat-input-form">
+                    <div class="veta-input-container">
+                        <!-- 左侧工具按钮 -->
+                        <div class="left-tools">
+                            <button type="button" id="attachment-btn" class="tool-btn" title="添加附件">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <div class="tools-dropdown">
+                                <button type="button" id="tools-btn" class="tool-btn" title="工具">
+                                    <i class="fas fa-wrench"></i>
+                                    <span class="tool-text">工具</span>
+                                </button>
+                                <!-- 工具下拉菜单 -->
+                                <div id="tools-menu" class="tools-menu hidden">
+                                    <div class="tool-option">
+                                        <div class="tool-option-content">
+                                            <i class="fas fa-database"></i>
+                                            <span>知识库检索</span>
+                                        </div>
+                                        <div class="toggle-switch" id="knowledge-toggle">
+                                            <input type="checkbox" id="knowledge-checkbox" class="toggle-input">
+                                            <label for="knowledge-checkbox" class="toggle-label">
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 输入框 -->
+                        <input type="text" id="user-input" class="veta-input" placeholder="问问 Veta" required autofocus />
+                        
+                        <!-- 右侧按钮组 -->
+                        <div class="right-buttons">
+                            <button type="button" id="voice-btn" class="voice-btn" title="语音输入">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button type="submit" class="send-arrow-btn" title="发送">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- 用户ID输入弹窗 -->
+    <div id="user-id-modal" class="modal">
+        <div class="modal-content">
+            <h3>欢迎使用智能体动物医院</h3>
+            <p>请输入您的用户ID以开始使用：</p>
+            <div class="input-group">
+                <input type="text" id="user-id-input" class="form-input" placeholder="请输入用户ID" required />
+            </div>
+            <div class="modal-actions">
+                <button id="user-id-confirm" class="btn-primary">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模式选择弹窗 -->
+    <div id="mode-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>选择模式</h3>
+            <div class="mode-options">
+                <div class="mode-card" data-mode="animal">
+                    <i class="fas fa-hospital"></i>
+                    <h4>模拟问诊</h4>
+                    <p>全面的宠物医疗服务和健康咨询</p>
+                </div>
+                <div class="mode-card" data-mode="vet">
+                    <i class="fas fa-user-md"></i>
+                    <h4>兽医问答</h4>
+                    <p>专业兽医诊断和医疗建议</p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="modal-cancel" class="btn-secondary">取消</button>
+                <button id="modal-confirm" class="btn-primary">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.2/dist/markdown-it.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+    <script src="/static/user-storage.js?v=2"></script>
+    <script src="/static/veta.js?v=41"></script>
+</body>
+</html>

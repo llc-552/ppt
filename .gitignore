@@ -1,0 +1,82 @@
+# Python
+__pycache__/
+main/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 虚拟环境
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 配置文件（包含敏感信息）
+config.yaml
+
+# 日志文件
+*.log
+logs/
+ngrok.log
+uvicorn.log
+
+# Redis数据
+redis/*.rdb
+redis/*.aof
+redis/dump*.rdb
+redis/redis-*.tar.gz
+
+# RAG索引和数据（可选，视情况而定）
+faiss_index/
+# 如果rag_data是用户数据，也应该忽略
+# rag_data/
+
+# Ngrok 可执行文件和配置（不提交）
+Ngrok/ngrok
+~/.config/ngrok/ngrok.yml
+# ngrok.sh 脚本可以提交（不包含敏感信息）
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+.cache/
+
+# 测试文件
+test.py
+s.py
+2.sh
+# local.sh 应该被提交
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
