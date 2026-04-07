@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教学文档智能生成系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; background: #f5f7fa; }
+        .container { display: flex; height: 100vh; }
+        .sidebar { width: 280px; background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%); color: white; padding: 20px; overflow-y: auto; }
+        .sidebar h1 { font-size: 18px; margin-bottom: 20px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .sidebar-section { margin-bottom: 25px; }
+        .sidebar-section h3 { font-size: 13px; text-transform: uppercase; color: #95a5a6; margin-bottom: 10px; }
+        .sidebar-item { padding: 10px 12px; margin-bottom: 5px; border-radius: 6px; cursor: pointer; transition: all 0.3s; background: rgba(255,255,255,0.05); }
+        .sidebar-item:hover, .sidebar-item.active { background: #3498db; }
+        .main { flex: 1; display: flex; flex-direction: column; }
+        .header { background: white; padding: 20px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .header h2 { color: #2c3e50; font-size: 24px; }
+        .content { flex: 1; overflow-y: auto; padding: 30px; }
+        .section { background: white; border-radius: 8px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: none; }
+        .section.active { display: block; }
+        .section-title { font-size: 18px; color: #2c3e50; margin-bottom: 15px; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; color: #2c3e50; font-weight: 500; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 14px; font-family: inherit; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 3px rgba(52,152,219,0.1); }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-small { padding: 6px 12px; font-size: 12px; }
+        .document-list { display: grid; gap: 15px; }
+        .document-card { background: white; border: 1px solid #ecf0f1; border-radius: 8px; padding: 15px; cursor: pointer; transition: all 0.3s; }
+        .document-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); border-color: #3498db; }
+        .document-card h3 { color: #2c3e50; margin-bottom: 8px; }
+        .document-card p { color: #7f8c8d; font-size: 12px; margin-bottom: 8px; }
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .status-created { background: #ecf0f1; color: #7f8c8d; }
+        .upload-area { border: 2px dashed #3498db; border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s; background: #ecf7ff; margin-bottom: 15px; }
+        .upload-area:hover { background: #d6f0ff; border-color: #2980b9; }
+        .upload-area.dragover { background: #d6f0ff; border-color: #2980b9; transform: scale(1.02); }
+        .upload-area i { font-size: 32px; color: #3498db; margin-bottom: 10px; }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 15px 20px; background: white; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; z-index: 2000; animation: slideIn 0.3s; }
+        .toast.success { border-left: 4px solid #27ae60; }
+        .toast.error { border-left: 4px solid #e74c3c; }
+        .toast.info { border-left: 4px solid #3498db; }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1><i class="fas fa-graduation-cap"></i> 教学文档生成</h1>
+
+            <div class="sidebar-section">
+                <h3>📋 文档管理</h3>
+                <div class="sidebar-item active" onclick="showSection('documents', this)"><i class="fas fa-file-alt"></i> 我的文档</div>
+                <div class="sidebar-item" onclick="showSection('create', this)"><i class="fas fa-plus-circle"></i> 创建新文档</div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>📚 素材库</h3>
+                <div class="sidebar-item" onclick="showSection('materials', this)"><i class="fas fa-images"></i> 素材管理</div>
+                <div class="sidebar-item" onclick="showSection('upload', this)"><i class="fas fa-cloud-upload-alt"></i> 上传素材</div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="header">
+                <h2 id="page-title">我的文档</h2>
+                <button class="btn btn-primary" onclick="refreshData()"><i class="fas fa-sync-alt"></i> 刷新</button>
+            </div>
+
+            <div class="content">
+                <!-- 文档列表 -->
+                <div id="documents" class="section active">
+                    <h3 class="section-title">我的教学文档</h3>
+                    <div id="documentsList" class="document-list"><p>加载中...</p></div>
+                </div>
+
+                <!-- 创建文档 -->
+                <div id="create" class="section">
+                    <h3 class="section-title">创建新教学文档</h3>
+                    <form id="createForm" onsubmit="handleCreateDocument(event)">
+                        <div class="form-group">
+                            <label>文档标题 <span style="color: red;">*</span></label>
+                            <input type="text" id="docTitle" placeholder="例如：Python数据结构详解" required>
+                        </div>
+                        <div class="form-group">
+                            <label>教学主题 <span style="color: red;">*</span></label>
+                            <input type="text" id="docTopic" placeholder="例如：Python中的列表、字典和集合" required>
+                        </div>
+                        <div class="form-group">
+                            <label>受众层级 <span style="color: red;">*</span></label>
+                            <select id="docAudience" required>
+                                <option value="elementary">小学</option>
+                                <option value="middle_school">初中</option>
+                                <option value="high_school">高中</option>
+                                <option value="undergraduate" selected>本科</option>
+                                <option value="graduate">研究生</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>教学目标 <span style="color: red;">*</span></label>
+                            <textarea id="objectives" placeholder="请输入教学目标，每行一个&#10;例如：&#10;1. 理解列表的基本操作&#10;2. 掌握字典的使用方法" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> 创建文档</button>
+                    </form>
+                </div>
+
+                <!-- 素材管理 -->
+                <div id="materials" class="section">
+                    <h3 class="section-title">素材库管理</h3>
+                    <div id="materialsList" class="document-list"><p>加载中...</p></div>
+                </div>
+
+                <!-- 上传素材 -->
+                <div id="upload" class="section">
+                    <h3 class="section-title">上传教学素材</h3>
+                    <div style="margin-bottom: 20px;">
+                        <h4>上传图像</h4>
+                        <div class="upload-area" id="imageUploadArea" ondrop="handleImageDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>拖拽图像文件到此处或点击选择</p>
+                            <small>支持：JPG, PNG, GIF, WebP (最大100MB)</small>
+                            <input type="file" id="imageFile" multiple accept="image/*" style="display: none;">
+                        </div>
+                        <input type="text" id="imageDescription" placeholder="图像描述（可选）" style="margin-top: 10px; width: 100%; padding: 8px; border: 1px solid #bdc3c7; border-radius: 6px;">
+                        <input type="text" id="imageTags" placeholder="标签，用逗号分隔（可选）" style="margin-top: 10px; width: 100%; padding: 8px; border: 1px solid #bdc3c7; border-radius: 6px;">
+                        <button class="btn btn-primary" style="margin-top: 10px;" onclick="uploadImages()"><i class="fas fa-upload"></i> 上传图像</button>
+                    </div>
+                    <div>
+                        <h4>上传文档</h4>
+                        <div class="upload-area" id="docUploadArea" ondrop="handleDocDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                            <i class="fas fa-file-upload"></i>
+                            <p>拖拽文档文件到此处或点击选择</p>
+                            <small>支持：PDF, DOCX, TXT, MD (最大100MB)</small>
+                            <input type="file" id="docFile" multiple accept=".pdf,.docx,.txt,.md" style="display: none;">
+                        </div>
+                        <input type="text" id="docDescription" placeholder="文档描述（可选）" style="margin-top: 10px; width: 100%; padding: 8px; border: 1px solid #bdc3c7; border-radius: 6px;">
+                        <input type="text" id="docTags" placeholder="标签，用逗号分隔（可选）" style="margin-top: 10px; width: 100%; padding: 8px; border: 1px solid #bdc3c7; border-radius: 6px;">
+                        <button class="btn btn-primary" style="margin-top: 10px;" onclick="uploadDocuments()"><i class="fas fa-upload"></i> 上传文档</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDocuments();
+        });
+
+        // 加载文档列表
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/api/documents');
+                const result = await response.json();
+                if (result.success) {
+                    renderDocuments(result.data.documents);
+                } else {
+                    showToast('加载文档失败', 'error');
+                }
+            } catch (error) {
+                console.error('加载文档失败:', error);
+                showToast('加载文档失败', 'error');
+            }
+        }
+
+        // 渲染文档列表
+        function renderDocuments(documents) {
+            const list = document.getElementById('documentsList');
+            if (documents.length === 0) {
+                list.innerHTML = '<p style="color: #7f8c8d; text-align: center; padding: 40px;">暂无文档，请创建新文档</p>';
+                return;
+            }
+            list.innerHTML = documents.map(doc => `
+                <div class="document-card">
+                    <h3>${doc.title}</h3>
+                    <p>ID: ${doc.doc_id}</p>
+                    <p>创建时间: ${new Date(doc.created_at).toLocaleString()}</p>
+                    <span class="status-badge status-${doc.status}">${doc.status}</span>
+                    <div style="margin-top: 10px;">
+                        <button class="btn btn-small btn-primary" onclick="viewDocument('${doc.doc_id}')"><i class="fas fa-eye"></i> 查看</button>
+                        <button class="btn btn-small btn-primary" onclick="generateContent('${doc.doc_id}')"><i class="fas fa-cog"></i> 生成</button>
+                        <button class="btn btn-small btn-danger" onclick="deleteDocument('${doc.doc_id}')"><i class="fas fa-trash"></i> 删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 创建文档
+        async function handleCreateDocument(event) {
+            event.preventDefault();
+            const title = document.getElementById('docTitle').value;
+            const topic = document.getElementById('docTopic').value;
+            const audience_level = document.getElementById('docAudience').value;
+            const objectives = document.getElementById('objectives').value.split('\n').filter(o => o.trim());
+
+            try {
+                const response = await fetch('/api/documents/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, topic, objectives, audience_level })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('文档创建成功', 'success');
+                    document.getElementById('createForm').reset();
+                    loadDocuments();
+                    showSection('documents');
+                } else {
+                    showToast('文档创建失败', 'error');
+                }
+            } catch (error) {
+                console.error('创建文档失败:', error);
+                showToast('创建文档失败', 'error');
+            }
+        }
+
+        // 生成内容
+        async function generateContent(docId) {
+            try {
+                showToast('正在生成内容，请稍候...', 'info');
+                const response = await fetch('/api/generate/content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ doc_id: docId, regenerate: false })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('内容生成中，请查看文档详情了解进度', 'success');
+                    setTimeout(loadDocuments, 2000);
+                } else {
+                    showToast('生成失败', 'error');
+                }
+            } catch (error) {
+                console.error('生成失败:', error);
+                showToast('生成失败', 'error');
+            }
+        }
+
+        // 查看文档
+        async function viewDocument(docId) {
+            try {
+                const response = await fetch(`/api/documents/${docId}`);
+                const result = await response.json();
+                if (result.success) {
+                    const data = result.data;
+                    alert(`文档详情\n\n标题: ${data.title}\n状态: ${data.status}\nPPT页数: ${data.ppt_slides_count || 0}`);
+                }
+            } catch (error) {
+                console.error('查看文档失败:', error);
+                showToast('查看文档失败', 'error');
+            }
+        }
+
+        // 导出文档
+        async function exportDocument(docId) {
+            try {
+                const response = await fetch('/api/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ doc_id: docId, format: 'pptx' })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    const downloadUrl = `/api/download/${docId}?format=pptx`;
+                    window.location.href = downloadUrl;
+                    showToast('文档导出成功', 'success');
+                } else {
+                    showToast('导出失败', 'error');
+                }
+            } catch (error) {
+                console.error('导出失败:', error);
+                showToast('导出失败', 'error');
+            }
+        }
+
+        // 删除文档
+        async function deleteDocument(docId) {
+            if (!confirm('确定要删除这个文档吗？')) return;
+            try {
+                const response = await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('文档删除成功', 'success');
+                    loadDocuments();
+                } else {
+                    showToast('删除失败', 'error');
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+                showToast('删除失败', 'error');
+            }
+        }
+
+        // 上传图像
+        function uploadImages() {
+            const fileInput = document.getElementById('imageFile');
+            if (fileInput.files.length === 0) {
+                showToast('请选择文件', 'error');
+                return;
+            }
+            const description = document.getElementById('imageDescription').value;
+            const tags = document.getElementById('imageTags').value;
+            for (let file of fileInput.files) {
+                uploadFile(file, 'image', description, tags);
+            }
+        }
+
+        // 上传文档
+        function uploadDocuments() {
+            const fileInput = document.getElementById('docFile');
+            if (fileInput.files.length === 0) {
+                showToast('请选择文件', 'error');
+                return;
+            }
+            const description = document.getElementById('docDescription').value;
+            const tags = document.getElementById('docTags').value;
+            for (let file of fileInput.files) {
+                uploadFile(file, 'document', description, tags);
+            }
+        }
+
+        // 上传文件
+        async function uploadFile(file, type, description, tags) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('description', description);
+            formData.append('tags', tags);
+            const endpoint = type === 'image' ? '/api/materials/upload-image' : '/api/materials/upload-document';
+            try {
+                const response = await fetch(endpoint, { method: 'POST', body: formData });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(`${file.name} 上传成功`, 'success');
+                } else {
+                    showToast(`${file.name} 上传失败`, 'error');
+                }
+            } catch (error) {
+                console.error('上传失败:', error);
+                showToast('上传失败', 'error');
+            }
+        }
+
+        // 拖拽处理
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+        }
+
+        function handleImageDrop(event) {
+            event.preventDefault();
+            document.getElementById('imageUploadArea').classList.remove('dragover');
+            document.getElementById('imageFile').files = event.dataTransfer.files;
+        }
+
+        function handleDocDrop(event) {
+            event.preventDefault();
+            document.getElementById('docUploadArea').classList.remove('dragover');
+            document.getElementById('docFile').files = event.dataTransfer.files;
+        }
+
+        // 页面切换
+        function showSection(sectionId, elem) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+            if (elem) elem.classList.add('active');
+            const titles = {
+                'documents': '我的文档',
+                'create': '创建新文档',
+                'materials': '素材库管理',
+                'upload': '上传素材'
+            };
+            document.getElementById('page-title').textContent = titles[sectionId] || '教学文档生成系统';
+        }
+
+        // 刷新数据
+        function refreshData() {
+            loadDocuments();
+            showToast('数据已刷新', 'info');
+        }
+
+        // 消息提示
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // 点击上传区域选择文件
+        document.getElementById('imageUploadArea').addEventListener('click', () => {
+            document.getElementById('imageFile').click();
+        });
+        document.getElementById('docUploadArea').addEventListener('click', () => {
+            document.getElementById('docFile').click();
+        });
+    </script>
+</body>
+</html>
+

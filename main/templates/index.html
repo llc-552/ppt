@@ -3,51 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能体动物医院</title>
-    <link rel="stylesheet" href="/static/veta.css?v=43">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>教学文档智能生成系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; background: #f5f7fa; }
+        .container { display: flex; height: 100vh; }
+        .sidebar { width: 280px; background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%); color: white; padding: 20px; overflow-y: auto; }
+        .sidebar h1 { font-size: 18px; margin-bottom: 20px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .sidebar-item { padding: 10px; margin: 5px 0; border-radius: 6px; cursor: pointer; transition: all 0.3s; background: rgba(255,255,255,0.05); }
+        .sidebar-item:hover, .sidebar-item.active { background: #3498db; }
+        .main { flex: 1; display: flex; flex-direction: column; }
+        .header { background: white; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .header h2 { color: #2c3e50; }
+        .content { flex: 1; overflow-y: auto; padding: 30px; }
+        .section { background: white; border-radius: 8px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: none; }
+        .section.active { display: block; }
+        .section-title { font-size: 18px; color: #2c3e50; margin-bottom: 15px; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; color: #2c3e50; font-weight: 500; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 14px; font-family: inherit; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 3px rgba(52,152,219,0.1); }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .document-list { display: grid; gap: 15px; }
+        .document-card { background: white; border: 1px solid #ecf0f1; border-radius: 8px; padding: 15px; cursor: pointer; transition: all 0.3s; }
+        .document-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); border-color: #3498db; }
+        .document-card h3 { color: #2c3e50; margin-bottom: 8px; }
+        .document-card p { color: #7f8c8d; font-size: 12px; margin-bottom: 8px; }
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .status-created { background: #ecf0f1; color: #7f8c8d; }
+        .upload-area { border: 2px dashed #3498db; border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s; background: #ecf7ff; }
+        .upload-area:hover { background: #d6f0ff; border-color: #2980b9; }
+        .upload-area.dragover { background: #d6f0ff; border-color: #2980b9; transform: scale(1.02); }
+        .upload-area i { font-size: 32px; color: #3498db; margin-bottom: 10px; }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 15px 20px; background: white; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; z-index: 2000; animation: slideIn 0.3s; }
+        .toast.success { border-left: 4px solid #27ae60; }
+        .toast.error { border-left: 4px solid #e74c3c; }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .btn-small { padding: 6px 12px; font-size: 12px; }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- 侧边栏遮罩层 -->
-        <div class="sidebar-overlay"></div>
-        
-        <!-- 左侧任务栏 -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="app-title">
-                    <i class="fas fa-paw"></i>
-                    <span>智能体动物医院</span>
-                </div>
-                <button id="new-task-btn" class="new-task-btn">
-                    <i class="fas fa-plus"></i>
-                    新任务
-                </button>
-            </div>
-            
-            <div class="mode-selector">
-                <div class="mode-option" data-mode="animal">
-                    <i class="fas fa-hospital"></i>
-                    <span>模拟问诊</span>
-                </div>
-                <div class="mode-option active" data-mode="vet">
-                    <i class="fas fa-user-md"></i>
-                    <span>兽医问答</span>
-                </div>
+    <div class="container">
+        <div class="sidebar">
+            <h1><i class="fas fa-graduation-cap"></i> 教学文档生成</h1>
+            <div class="sidebar-item active" onclick="showSection('documents')"><i class="fas fa-file-alt"></i> 我的文档</div>
+            <div class="sidebar-item" onclick="showSection('create')"><i class="fas fa-plus-circle"></i> 创建新文档</div>
+            <div class="sidebar-item" onclick="showSection('materials')"><i class="fas fa-images"></i> 素材管理</div>
+            <div class="sidebar-item" onclick="showSection('upload')"><i class="fas fa-cloud-upload-alt"></i> 上传素材</div>
+        </div>
+
+        <div class="main">
+            <div class="header">
+                <h2 id="page-title">我的文档</h2>
+                <button class="btn btn-primary" onclick="refreshData()"><i class="fas fa-sync-alt"></i> 刷新</button>
             </div>
 
-            <div class="task-list">
-                <div class="task-section">
-                    <h3>今天</h3>
-                    <div id="today-tasks" class="tasks"></div>
+            <div class="content">
+                <!-- 文档列表 -->
+                <div id="documents" class="section active">
+                    <h3 class="section-title">我的教学文档</h3>
+                    <div id="documentsList" class="document-list"><p>加载中...</p></div>
                 </div>
-                <div class="task-section">
-                    <h3>昨天</h3>
-                    <div id="yesterday-tasks" class="tasks"></div>
+
+                <!-- 创建文档 -->
+                <div id="create" class="section">
+                    <h3 class="section-title">创建新教学文档</h3>
+                    <form id="createForm" onsubmit="handleCreateDocument(event)">
+                        <div class="form-group">
+                            <label>文档标题 <span style="color: red;">*</span></label>
+                            <input type="text" id="docTitle" placeholder="例如：Python数据结构详解" required>
+                        </div>
+                        <div class="form-group">
+                            <label>教学主题 <span style="color: red;">*</span></label>
+                            <input type="text" id="docTopic" placeholder="例如：Python中的列表、字典和集合" required>
+                        </div>
+                        <div class="form-group">
+                            <label>受众层级 <span style="color: red;">*</span></label>
+                            <select id="docAudience" required>
+                                <option value="elementary">小学</option>
+                                <option value="middle_school">初中</option>
+                                <option value="high_school">高中</option>
+                                <option value="undergraduate" selected>本科</option>
+                                <option value="graduate">研究生</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>教学目标 <span style="color: red;">*</span></label>
+                            <textarea id="objectives" placeholder="请输入教学目标，每行一个" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> 创建文档</button>
+                    </form>
                 </div>
-                <div class="task-section">
-                    <h3>过去7天</h3>
-                    <div id="week-tasks" class="tasks"></div>
+
+                <!-- 素材管理 -->
+                <div id="materials" class="section">
+                    <h3 class="section-title">素材库管理</h3>
+                    <div id="materialsList" class="document-list"><p>加载中...</p></div>
+                </div>
+
+                <!-- 上传素材 -->
+                <div id="upload" class="section">
+                    <h3 class="section-title">上传教学素材</h3>
+                    <div style="margin-bottom: 20px;">
+                        <h4>上传图像</h4>
+                        <div class="upload-area" id="imageUploadArea" ondrop="handleImageDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>拖拽图像文件到此处或点击选择</p>
+                            <small>支持：JPG, PNG, GIF, WebP</small>
+                            <input type="file" id="imageFile" multiple accept="image/*" style="display: none;">
+                        </div>
+                        <input type="text" id="imageDescription" placeholder="描述（可选）" style="margin-top: 10px; width: 100%; padding: 8px; border: 1px solid #bdc3c7; border-radius: 6px;">
+                        <button class="btn btn-primary" style="margin-top: 10px;" onclick="uploadImages()"><i class="fas fa-upload"></i> 上传图像</button>
+                    </div>
+                    <div>
+                        <h4>上传文档</h4>
+                        <div class="upload-area" id="docUploadArea" ondrop="handleDocDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                            <i class="fas fa-file-upload"></i>
+                            <p>拖拽文档文件到此处或点击选择</p>
+                            <small>支持：PDF, DOCX, TXT, MD</small>
+                            <input type="file" id="docFile" multiple accept=".pdf,.docx,.txt,.md" style="display: none;">
+                        </div>
+                        <input type="text" id="docDescription" placeholder="描述（可选）" style="margin-top: 10px; width: 100%; padding: 8px; border: 1px solid #bdc3c7; border-radius: 6px;">
+                        <button class="btn btn-primary" style="margin-top: 10px;" onclick="uploadDocuments()"><i class="fas fa-upload"></i> 上传文档</button>
+                    </div>
+                </div>
                 </div>
             </div>
             

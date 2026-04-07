@@ -22,9 +22,19 @@ faiss-cpu==1.12.0
 pypdf==6.0.0
 python-pptx==1.0.2
 markdownify==1.2.0
+python-docx==0.8.11
 
 # 排序和检索
 rank-bm25==0.2.2
+
+# 图像处理
+Pillow==10.0.0
+opencv-python==4.8.0.76
+
+# CLIP 模型相关
+torch==2.0.0
+torchvision==0.15.0
+clip==1.0
 
 # 数据库和缓存
 redis==6.4.0
@@ -32,9 +42,13 @@ redis==6.4.0
 # 工具库
 pydantic==2.11.7
 tqdm==4.67.1
+numpy==1.24.0
+pandas==2.0.0
 
 # 配置文件解析
 pyyaml==6.0.2
 
 # 其他依赖
 python-dotenv==1.1.1
+psutil==5.9.0
+aiofiles==23.1.0

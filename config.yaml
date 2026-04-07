@@ -1,0 +1,110 @@
+# 教学文档智能生成系统配置文件
+# 复制此文件为 config.yaml 并填写您的实际配置
+
+# OpenAI API 配置（支持OpenAI兼容的API如阿里云、本地Ollama等）
+llm:
+  # API 基础地址
+  api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  # API 密钥（请替换为您的实际密钥）
+  api_key: "sk-2fced42f2b3d4a2d8bcfb2b2c63ab851"
+  # 使用的LLM模型
+  model: "glm-5"
+  # 温度参数（0-2，越高越随机）
+  temperature: 0.7
+  # 最大token数
+  max_tokens: 4096
+
+# CLIP 图像编码模型配置
+clip:
+  # CLIP模型名称（huggingface）
+  model_name: "openai/clip-vit-base-patch32"
+  # 使用的设备（cpu 或 cuda）
+  device: "cpu"
+  # 图像分辨率
+  image_size: 224
+
+# 向量化与检索配置
+embedding:
+  # 文本embedding模型
+  text_model: "Qwen/Qwen3-Embedding-0.6B"
+  # Rerank 模型
+  rerank_model: "BAAI/bge-reranker-base"
+  # BM25 检索数量
+  bm25_k: 5
+  # FAISS 检索数量
+  faiss_k: 5
+  # Rerank 后保留的结果数量
+  top_n: 3
+  # 文本切片大小（字符数）
+  chunk_size: 500
+  # 文本切片重叠（字符数）
+  chunk_overlap: 50
+  # 使用的设备
+  device: "cpu"
+
+# 数据存储配置
+storage:
+  # 数据根目录
+  data_dir: "./data"
+  # 项目目录
+  projects_dir: "./data/projects"
+  # 素材库目录
+  materials_dir: "./data/materials"
+  # FAISS索引目录
+  index_dir: "./data/faiss_index"
+  # PPT输出目录
+  output_dir: "./data/outputs"
+  # 临时文件目录
+  temp_dir: "./data/temp"
+
+# PPT 模板配置
+templates:
+  # 预置模板目录
+  preset_dir: "./templates/presets"
+  # 默认模板
+  default_template: "professional"
+  # 支持的模板列表
+  available_templates:
+    - "professional"    # 专业型
+    - "educational"     # 教育型
+    - "creative"        # 创意型
+
+# 系统配置
+system:
+  # 调试模式
+  debug: false
+  # 最大上传文件大小（MB）
+  max_upload_size: 100
+  # 支持的文档格式
+  supported_doc_formats: ["pdf", "docx", "txt", "md"]
+  # 支持的图像格式
+  supported_image_formats: ["jpg", "jpeg", "png", "gif", "webp"]
+  # 图像相关性阈值
+  image_relevance_threshold: 0.5
+  # 内容质量评分阈值
+  content_quality_threshold: 0.7
+
+# 教学文档生成配置
+teaching_doc:
+  # 最大PPT页数
+  max_pages: 50
+  # 每页最大文字数
+  max_words_per_page: 300
+  # 默认受众层级
+  default_audience_level: "undergraduate"
+  # 支持的受众层级
+  audience_levels: ["elementary", "middle_school", "high_school", "undergraduate", "graduate"]
+  # Bloom分类法支持的层级
+  bloom_levels: ["remember", "understand", "apply", "analyze", "evaluate", "create"]
+
+# Redis 配置（可选，用于缓存和任务队列）
+redis:
+  # Redis 服务器地址
+  host: "127.0.0.1"
+  # Redis 服务器端口
+  port: 6379
+  # 使用的数据库
+  db: 0
+  # 是否启用
+  enabled: false
+
