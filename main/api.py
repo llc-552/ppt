@@ -75,20 +75,30 @@ def validate_file_format(filename: str, allowed_formats: List[str]) -> bool:
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    """返回前端页面"""
+    """返回主页"""
     try:
-        with open(Path(__file__).parent / "templates" / "teaching.html", 'r', encoding='utf-8') as f:
+        with open(Path(__file__).parent / "templates" / "index_new.html", 'r', encoding='utf-8') as f:
             return f.read()
     except:
         return """
         <html>
         <head><title>教学文档智能生成系统</title></head>
-        <body style="font-family: Arial, sans-serif; margin: 50px;">
-            <h1>教学文档智能生成系统</h1>
-            <p>系统正在加载，如果页面长时间不显示，请查看API文档：<a href="/docs">/docs</a></p>
+        <body style="font-family: Arial, sans-serif; margin: 50px; text-align: center;">
+            <h1>🎓 教学文档智能生成系统</h1>
+            <p>系统正在加载...</p>
+            <p><a href="/teaching" style="color: #3498db;">进入系统</a> | <a href="/docs" style="color: #3498db;">API文档</a></p>
         </body>
         </html>
         """
+
+@app.get("/teaching", response_class=HTMLResponse)
+async def teaching_page():
+    """返回教学文档生成页面"""
+    try:
+        with open(Path(__file__).parent / "templates" / "teaching.html", 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"页面加载失败: {str(e)}")
 
 
 @app.get("/health")

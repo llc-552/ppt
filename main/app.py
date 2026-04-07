@@ -46,12 +46,3 @@ async def shutdown_event():
 @app.get("/ping")
 async def ping():
     return {"status": "pong"}
-
-                    print(f"✅ AnimalHospital 会话已重置: {instance_key}")
-            else:
-                # 如果没有指定用户，清除所有实例
-                animal_hospital_instances.clear()
-                print("✅ 所有 AnimalHospital 会话已重置")
-
-    print(f"[系统]: 会话已重置 -> {mode}")
-    return {"status": "ok", "mode": mode}

@@ -73,8 +73,10 @@ class PPTExporter:
         # 添加标题幻灯片
         self._add_title_slide(prs, document, colors)
 
-        # 添加内容幻灯片
-        if document.ppt_content:
+        # 添加内容幻灯片（带图片）
+        if document.ppt_content and document.ppt_layout:
+            self._add_content_slides_with_images(prs, document, colors)
+        elif document.ppt_content:
             self._add_content_slides(prs, document.ppt_content, colors)
 
         # 保存文件
@@ -204,6 +206,119 @@ class PPTExporter:
             footer_para.font.size = Pt(12)
             footer_para.font.italic = True
             footer_para.font.color.rgb = colors['secondary']
+
+    def _add_content_slides_with_images(self, prs: Presentation, document: 'TeachingDocument',
+                                       colors: Dict[str, RGBColor]):
+        """添加包含图片的内容幻灯片"""
+        from main.materials import IndexManagementService
+        from main.config import get_storage_config
+        
+        material_service = IndexManagementService()
+        storage_config = get_storage_config()
+        materials_dir = Path(storage_config['materials_dir'])
+        
+        for idx, slide_data in enumerate(document.ppt_content.slides):
+            # 找到对应的布局信息
+            slide_layout = None
+            if document.ppt_layout and idx < len(document.ppt_layout.slides):
+                slide_layout = document.ppt_layout.slides[idx]
+            
+            # 获取图片ID
+            image_ids = slide_layout.image_ids if slide_layout else []
+            
+            # 创建幻灯片
+            slide = prs.slides.add_slide(prs.slide_layouts[6])  # 空白布局
+            
+            # 背景颜色
+            background = slide.background
+            fill = background.fill
+            fill.solid()
+            fill.fore_color.rgb = RGBColor(255, 255, 255)
+            
+            # 添加顶部条纹
+            header_shape = slide.shapes.add_shape(
+                1,  # 矩形
+                Inches(0), Inches(0), Inches(10), Inches(0.8)
+            )
+            header_shape.fill.solid()
+            header_shape.fill.fore_color.rgb = colors['primary']
+            header_shape.line.color.rgb = colors['primary']
+            
+            # 添加标题
+            title_box = slide.shapes.add_textbox(
+                Inches(0.5), Inches(0.15), Inches(9), Inches(0.6)
+            )
+            title_frame = title_box.text_frame
+            title_frame.word_wrap = True
+            
+            title_para = title_frame.paragraphs[0]
+            title_para.text = slide_data.title
+            title_para.font.size = Pt(36)
+            title_para.font.bold = True
+            title_para.font.color.rgb = RGBColor(255, 255, 255)
+            title_para.alignment = PP_ALIGN.LEFT
+            
+            # 如果有图片，调整布局
+            has_image = bool(image_ids)
+            
+            if has_image:
+                # 左侧文字，右侧图片布局
+                content_box = slide.shapes.add_textbox(
+                    Inches(0.8), Inches(1.2), Inches(4.5), Inches(5)
+                )
+                
+                # 添加图片
+                for img_id in image_ids[:1]:  # 只使用第一张图片
+                    material = material_service.get_material_by_id(img_id)
+                    if material:
+                        image_path = materials_dir / material['filename']
+                        if image_path.exists():
+                            try:
+                                # 在右侧添加图片
+                                slide.shapes.add_picture(
+                                    str(image_path),
+                                    Inches(5.5), Inches(1.5),
+                                    width=Inches(3.8)
+                                )
+                                print(f"✅ 为幻灯片 {idx} ({slide_data.title}) 添加图片: {material['filename']}")
+                            except Exception as e:
+                                print(f"⚠️  添加图片失败: {e}")
+            else:
+                # 无图片，全宽文字
+                content_box = slide.shapes.add_textbox(
+                    Inches(0.8), Inches(1.2), Inches(8.4), Inches(5)
+                )
+            
+            content_frame = content_box.text_frame
+            content_frame.word_wrap = True
+            
+            # 添加关键要点
+            for i, key_point in enumerate(slide_data.key_points):
+                if i == 0:
+                    p = content_frame.paragraphs[0]
+                else:
+                    p = content_frame.add_paragraph()
+                
+                p.text = f"• {key_point}"
+                p.font.size = Pt(20)
+                p.font.color.rgb = colors['text']
+                p.level = 0
+                p.space_before = Pt(6)
+                p.space_after = Pt(6)
+            
+            # 添加底部说明（如果有）
+            if slide_data.speaker_notes:
+                footer_box = slide.shapes.add_textbox(
+                    Inches(0.8), Inches(6.5), Inches(8.4), Inches(0.8)
+                )
+                footer_frame = footer_box.text_frame
+                footer_frame.word_wrap = True
+                
+                footer_para = footer_frame.paragraphs[0]
+                footer_para.text = f"💡 {slide_data.speaker_notes[:100]}..."
+                footer_para.font.size = Pt(12)
+                footer_para.font.italic = True
+                footer_para.font.color.rgb = colors['secondary']
 
     def export_to_markdown(self, document: TeachingDocument, output_path: str) -> str:
         """导出为Markdown格式"""

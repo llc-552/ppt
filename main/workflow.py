@@ -138,11 +138,32 @@ class WorkflowNodes:
                 available_images=available_images
             )
             state['progress'] = 75
+            
+            print(f"✅ 图片匹配完成: 为 {len(image_matches)} 张幻灯片匹配了图片")
 
-            # 创建PPT布局
+            # 创建PPT布局，包含图片匹配信息
+            from main.models import SlideLayout
+            slide_layouts = []
+            
+            # 创建图片ID映射字典
+            image_map = {slide_idx: img_id for slide_idx, img_id in image_matches}
+            
+            # 为每张幻灯片创建布局信息
+            for idx, slide in enumerate(doc.ppt_content.slides):
+                image_ids = [image_map[idx]] if idx in image_map else []
+                slide_layout = SlideLayout(
+                    slide_index=idx,
+                    title=slide.title,
+                    template=layout_result.get('template', 'professional'),
+                    image_ids=image_ids,
+                    image_positions=[],
+                    text_layout='default'
+                )
+                slide_layouts.append(slide_layout)
+            
             ppt_layout = PPTLayout(
                 template_name=layout_result.get('template', 'professional'),
-                slides=[],
+                slides=slide_layouts,
                 color_scheme=layout_result.get('color_scheme', 'default'),
                 design_quality_score=layout_result.get('design_quality', 0.7)
             )
@@ -160,47 +181,19 @@ class WorkflowNodes:
             raise
 
     def step_4_human_review(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """步骤4: 人工审核 (Human-in-the-loop)"""
+        """步骤4: 自动审核 (已禁用人工审核，自动批准)"""
         try:
-            state['current_step'] = 'human_review'
+            state['current_step'] = 'auto_approve'
             state['progress'] = 85
 
             doc = state['document']
-            doc.status = DocumentStatus.UNDER_REVIEW
-            state['document'] = doc
-
-            # 中断工作流，等待人工审核
-            review_result = interrupt({
-                'doc_id': doc.doc_id,
-                'title': doc.title,
-                'status': 'review_pending',
-                'ppt_content': {
-                    'title': doc.ppt_content.title if doc.ppt_content else '',
-                    'slides_count': len(doc.ppt_content.slides) if doc.ppt_content else 0
-                },
-                'message': '文档已生成，等待人工审核。请审核内容并提交反馈。'
-            })
-
-            # 处理审核反馈
-            if review_result:
-                feedback = review_result.get('feedback')
-                if feedback:
-                    doc.review_feedback = ReviewFeedback(**feedback)
-
-                # 检查是否批准
-                approval = review_result.get('approval', False)
-                if approval:
-                    doc.status = DocumentStatus.APPROVED
-                    print(f"✅ 文档已批准")
-                else:
-                    # 返回修改建议
-                    state['modifications_needed'] = review_result.get('modifications', [])
-                    print(f"⚠️  需要修改: {state['modifications_needed']}")
-
+            
+            # 跳过人工审核，直接批准
+            doc.status = DocumentStatus.APPROVED
             state['document'] = doc
             state['progress'] = 90
 
-            print(f"✅ 步骤4完成: 人工审核")
+            print(f"✅ 步骤4完成: 文档已自动批准")
             return state
         except Exception as e:
             state['error'] = f"步骤4错误: {str(e)}"

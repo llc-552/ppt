@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教学文档智能生成系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .hero-container {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 60px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        h1 {
+            font-size: 48px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            font-size: 20px;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        .feature-card {
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 15px;
+            padding: 30px;
+            transition: all 0.3s;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .feature-title {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .feature-desc {
+            font-size: 14px;
+            color: #7f8c8d;
+            line-height: 1.5;
+        }
+        .cta-button {
+            display: inline-block;
+            padding: 18px 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+        }
+        .tech-stack {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #ecf0f1;
+        }
+        .tech-stack h3 {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .tech-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .tech-badge {
+            padding: 8px 16px;
+            background: #ecf0f1;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-container">
+        <div class="logo">🎓</div>
+        <h1>教学文档智能生成系统</h1>
+        <p class="subtitle">
+            融合大语言模型、多模态RAG与多智能体协作<br>
+            自动生成结构化教案与精美PPT，支持交互式修改
+        </p>
+        
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <div class="feature-title">教学意图解析智能体</div>
+                <div class="feature-desc">深度理解教学主题和目标，自动提取关键词与Bloom分类层级</div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <div class="feature-title">索引建立智能体</div>
+                <div class="feature-desc">使用CLIP模型对图片进行编码，文档向量化，实现高效检索</div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">✍️</div>
+                <div class="feature-title">内容生成智能体</div>
+                <div class="feature-desc">利用LLM生成高质量教案和PPT要点，包含重点难点和课堂作业</div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <div class="feature-title">模板设计与排版智能体</div>
+                <div class="feature-desc">检索相关图片并智能插入，合理排版，打造专业演示文稿</div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">✅</div>
+                <div class="feature-title">导出智能体</div>
+                <div class="feature-desc">Human-in-the-loop机制，交互式审核修改，满意后一键导出PPT</div>
+            </div>
+        </div>
+        
+        <a href="/teaching" class="cta-button">
+            <i class="fas fa-rocket"></i> 开始使用
+        </a>
+        
+        <div class="tech-stack">
+            <h3>技术栈</h3>
+            <div class="tech-badges">
+                <span class="tech-badge">🤖 LangChain + LangGraph</span>
+                <span class="tech-badge">🔥 FastAPI</span>
+                <span class="tech-badge">🖼️ CLIP Vision Model</span>
+                <span class="tech-badge">🔍 FAISS + BM25</span>
+                <span class="tech-badge">📊 python-pptx</span>
+                <span class="tech-badge">💬 Multi-Agent System</span>
+                <span class="tech-badge">🎯 Human-in-the-Loop</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

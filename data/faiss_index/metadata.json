@@ -1,0 +1,26 @@
+[
+  {
+    "material_id": "img_7f0cb3d3",
+    "type": "image",
+    "filename": "线代1.jpeg",
+    "file_path": "data/materials/线代1.jpeg",
+    "description": "",
+    "tags": [],
+    "upload_time": "2026-04-07T15:32:09.760400",
+    "width": 307,
+    "height": 164,
+    "embedding_dim": 512
+  },
+  {
+    "material_id": "img_b993b220",
+    "type": "image",
+    "filename": "线代2.png",
+    "file_path": "data/materials/线代2.png",
+    "description": "",
+    "tags": [],
+    "upload_time": "2026-04-07T15:32:16.271176",
+    "width": 231,
+    "height": 219,
+    "embedding_dim": 512
+  }
+]

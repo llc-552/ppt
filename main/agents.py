@@ -4,7 +4,9 @@
 """
 
 import json
+import os
 from typing import Dict, Any, List, Optional, Tuple
+import httpx
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from main.config import get_llm_config, get_teaching_doc_config, get_system_config
@@ -32,14 +34,44 @@ class LLMProvider:
     def _init_llm(self):
         """初始化LLM"""
         config = get_llm_config()
-        self._llm = ChatOpenAI(
-            api_key=config['api_key'],
-            base_url=config['api_base'],
-            model=config['model'],
-            temperature=config['temperature'],
-            max_tokens=config['max_tokens']
-        )
-        print(f"✅ LLM提供者初始化成功: {config['model']}")
+        
+        # 配置 HTTP 客户端以支持代理
+        http_client = None
+        http_proxy = os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy')
+        https_proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
+        
+        if http_proxy or https_proxy:
+            # 使用 HTTP/HTTPS 代理而不是 SOCKS
+            proxy_url = https_proxy or http_proxy
+            # 确保只使用 http/https 协议，忽略 socks
+            if proxy_url.startswith('socks://'):
+                print(f"⚠️  警告: 检测到 socks 代理 ({proxy_url})，但 ChatOpenAI 不支持，将跳过代理")
+                http_client = httpx.Client(trust_env=False)
+            else:
+                # trust_env=False 防止 httpx 从环境变量读取 ALL_PROXY (socks)
+                http_client = httpx.Client(proxy=proxy_url, trust_env=False)
+                print(f"✅ 使用代理: {proxy_url}")
+        
+        # 临时移除 ALL_PROXY 环境变量，避免 ChatOpenAI 验证时读取 socks 代理
+        all_proxy_backup = os.environ.pop('ALL_PROXY', None)
+        all_proxy_lower_backup = os.environ.pop('all_proxy', None)
+        
+        try:
+            self._llm = ChatOpenAI(
+                api_key=config['api_key'],
+                base_url=config['api_base'],
+                model=config['model'],
+                temperature=config['temperature'],
+                max_tokens=config['max_tokens'],
+                http_client=http_client
+            )
+            print(f"✅ LLM提供者初始化成功: {config['model']}")
+        finally:
+            # 恢复 ALL_PROXY 环境变量
+            if all_proxy_backup:
+                os.environ['ALL_PROXY'] = all_proxy_backup
+            if all_proxy_lower_backup:
+                os.environ['all_proxy'] = all_proxy_lower_backup
 
     def get_llm(self):
         """获取LLM实例"""
@@ -277,11 +309,17 @@ PPT应该：
         # 构建SlideKeyPoints列表
         slides = []
         for slide_data in ppt_data.get('slides', []):
+            # 确保 image_descriptions 是列表类型
+            image_descs = slide_data.get('image_descriptions', [])
+            if isinstance(image_descs, str):
+                # 如果是字符串，转换为包含单个元素的列表
+                image_descs = [image_descs] if image_descs else []
+            
             slide = SlideKeyPoints(
                 title=slide_data.get('title', ''),
                 key_points=slide_data.get('key_points', []),
                 speaker_notes=slide_data.get('speaker_notes', ''),
-                image_descriptions=slide_data.get('image_descriptions', []),
+                image_descriptions=image_descs,
                 teaching_tips=slide_data.get('teaching_tips', '')
             )
             slides.append(slide)

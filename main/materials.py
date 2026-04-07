@@ -21,6 +21,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from main.config import get_config, get_storage_config, get_clip_config, get_embedding_config
 from main.models import MaterialMetadata, ImageMaterial, DocumentMaterial
+from main.clip_indexer import get_clip_indexer
 
 
 class ImageIndexer:
@@ -28,64 +29,22 @@ class ImageIndexer:
 
     def __init__(self):
         """初始化图像索引器"""
-        self.clip_config = get_clip_config()
         self.storage_config = get_storage_config()
-
-        try:
-            import clip
-            import torch
-            self.clip = clip
-            self.torch = torch
-            self.device = torch.device("cuda" if torch.cuda.is_available() and self.clip_config.get('device') == 'cuda' else "cpu")
-            self.clip_model, self.preprocess = clip.load(self.clip_config['model_name'], device=self.device)
-            print(f"✅ CLIP 模型加载成功，设备: {self.device}")
-        except ImportError:
-            print("⚠️  CLIP库未安装，将使用备用方案（基于图像特征）")
-            self.clip = None
+        # 使用全局CLIP索引器
+        self.clip_indexer = get_clip_indexer()
 
     def process_image(self, image_path: str) -> Tuple[np.ndarray, Dict[str, Any]]:
         """处理图像并生成CLIP向量"""
         try:
-            # 打开图像
-            image = Image.open(image_path).convert('RGB')
-            width, height = image.size
-
-            # 生成CLIP向量（如果CLIP可用）
-            if self.clip:
-                image_input = self.preprocess(image).unsqueeze(0).to(self.device)
-                with self.torch.no_grad():
-                    image_features = self.clip_model.encode_image(image_input)
-                    image_features = image_features / image_features.norm(dim=-1, keepdim=True)
-                embedding = image_features.cpu().numpy().flatten()
-            else:
-                # 备用方案：使用ResNet特征
-                embedding = self._get_image_features_fallback(image_path)
-
-            metadata = {
-                'width': width,
-                'height': height,
-                'format': image.format or 'unknown'
-            }
+            # 使用CLIP编码图像
+            embedding = self.clip_indexer.encode_image(image_path)
+            
+            # 获取图像元数据
+            metadata = self.clip_indexer.get_image_metadata(image_path)
 
             return embedding, metadata
         except Exception as e:
             print(f"❌ 处理图像 {image_path} 失败: {e}")
-            raise
-
-    def _get_image_features_fallback(self, image_path: str) -> np.ndarray:
-        """备用方案：基于OpenCV的图像特征提取"""
-        try:
-            import cv2
-            img = cv2.imread(image_path)
-            # 计算图像的直方图特征作为简单的向量表示
-            hist = cv2.calcHist([img], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
-            hist = cv2.normalize(hist, hist).flatten()
-            # 补充到与CLIP相同的维度（512）
-            embedding = np.zeros(512)
-            embedding[:len(hist)] = hist
-            return embedding
-        except Exception as e:
-            print(f"❌ 备用特征提取失败: {e}")
             raise
 
 

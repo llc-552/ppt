@@ -1,0 +1,53 @@
+{
+  "doc_id": "doc_3a46d950",
+  "title": "线性代数-矩阵与行列式",
+  "created_at": "2026-04-07T15:33:23.306158",
+  "updated_at": "2026-04-07T15:33:23.306168",
+  "status": "created",
+  "intent": {
+    "topic": "线性代数-矩阵与行列式",
+    "objectives": [
+      "1.理解矩阵与行列式的基本概念",
+      "2.学会矩阵与行列式的基本运算"
+    ],
+    "bloom_levels": [
+      "understand",
+      "apply"
+    ],
+    "audience_level": "undergraduate",
+    "keywords": [
+      "线性代数",
+      "矩阵",
+      "行列式",
+      "基本概念",
+      "基本运算",
+      "数学基础",
+      "本科生教学",
+      "代数思维"
+    ],
+    "duration_minutes": 45,
+    "prior_knowledge": null,
+    "teaching_style": "academic",
+    "clarity_score": 0.4
+  },
+  "teaching_plan": {
+    "topic": "线性代数-矩阵与行列式",
+    "objectives": [
+      "1.理解矩阵与行列式的基本概念",
+      "2.学会矩阵与行列式的基本运算"
+    ],
+    "introduction": "",
+    "content": "",
+    "key_points": [],
+    "teaching_methods": [],
+    "classroom_activities": "",
+    "homework": "",
+    "assessment_methods": "",
+    "resources": []
+  },
+  "ppt_content": null,
+  "ppt_layout": null,
+  "materials": [],
+  "export_path": null,
+  "export_format": "pptx"
+}
