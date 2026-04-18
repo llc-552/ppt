@@ -259,6 +259,13 @@ class ExportRequest(BaseModel):
     output_path: Optional[str] = Field(default=None, description="输出路径")
 
 
+class PPTRevisionRequest(BaseModel):
+    """PPT对话式修改请求"""
+    doc_id: str = Field(..., description="文档ID")
+    instruction: str = Field(..., description="用户修改指令")
+    conversation_history: List[Dict[str, str]] = Field(default=[], description="历史对话")
+
+
 class APIResponse(BaseModel):
     """API通用响应"""
     success: bool = Field(..., description="是否成功")
@@ -272,4 +279,3 @@ class StreamingEvent(BaseModel):
     content: Optional[str] = Field(default=None, description="事件内容")
     progress: Optional[int] = Field(default=None, description="进度百分比")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="元数据")
-

@@ -22,5 +22,41 @@
     "width": 231,
     "height": 219,
     "embedding_dim": 512
+  },
+  {
+    "material_id": "img_bb8aac3a",
+    "type": "image",
+    "filename": "矩阵定义.png",
+    "file_path": "data/materials/矩阵定义.png",
+    "description": "",
+    "tags": [],
+    "upload_time": "2026-04-07T20:31:53.617465",
+    "width": 224,
+    "height": 189,
+    "embedding_dim": 512
+  },
+  {
+    "material_id": "img_a132d92d",
+    "type": "image",
+    "filename": "矩阵乘法.png",
+    "file_path": "data/materials/矩阵乘法.png",
+    "description": "",
+    "tags": [],
+    "upload_time": "2026-04-07T20:32:03.701457",
+    "width": 360,
+    "height": 123,
+    "embedding_dim": 512
+  },
+  {
+    "material_id": "img_57ce9fcf",
+    "type": "image",
+    "filename": "行列式运算.png",
+    "file_path": "data/materials/行列式运算.png",
+    "description": "",
+    "tags": [],
+    "upload_time": "2026-04-07T20:32:12.666727",
+    "width": 217,
+    "height": 232,
+    "embedding_dim": 512
   }
 ]

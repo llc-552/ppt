@@ -264,13 +264,13 @@ PPT应该：
 5. 包含教学提示
 
 输出为JSON格式，包含：
-- title: PPT标题
-- subtitle: 副标题
+- title: PPT标题（字符串）
+- subtitle: 副标题（字符串）
 - slides: 幻灯片数组，每个包含title, key_points, speaker_notes, image_descriptions, teaching_tips
-- outline: 课程大纲
-- conclusion: 总结
-- learning_outcomes: 学习成果
-- assessment: 评估方法
+- outline: 课程大纲（字符串）
+- conclusion: 总结（字符串）
+- learning_outcomes: 学习成果（字符串数组）
+- assessment: 评估方法（字符串，多个方法用换行符分隔）
 """
 
         user_message = f"""根据以下教案生成PPT内容大纲：
@@ -329,6 +329,11 @@ PPT应该：
             slides = self._create_default_slides(intent, teaching_plan)
 
         # 构建PPTContent对象
+        # 处理assessment字段：如果是列表，转换为字符串
+        assessment_value = ppt_data.get('assessment', teaching_plan.assessment_methods)
+        if isinstance(assessment_value, list):
+            assessment_value = '\n'.join(assessment_value)
+        
         ppt_content = PPTContent(
             title=intent.topic,
             subtitle=ppt_data.get('subtitle', ''),
@@ -336,7 +341,7 @@ PPT应该：
             outline=ppt_data.get('outline', ''),
             conclusion=ppt_data.get('conclusion', ''),
             learning_outcomes=ppt_data.get('learning_outcomes', intent.objectives),
-            assessment=ppt_data.get('assessment', teaching_plan.assessment_methods)
+            assessment=assessment_value
         )
 
         print(f"✅ PPT内容生成完成: {len(slides)} 张幻灯片")

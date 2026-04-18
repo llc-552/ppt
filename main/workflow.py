@@ -323,6 +323,7 @@ class TeachingDocWorkflow:
                 state.update(step_state)
 
             # 返回更新后的文档
+            self._save_document(state['document'])
             return state['document']
 
         except Exception as e:
@@ -395,6 +396,9 @@ class TeachingDocWorkflow:
             if doc_dict.get('ppt_content'):
                 document.ppt_content = PPTContent(**doc_dict['ppt_content'])
 
+            if doc_dict.get('ppt_layout'):
+                document.ppt_layout = PPTLayout(**doc_dict['ppt_layout'])
+
             print(f"✅ 文档已加载: {doc_id}")
             return document
         except Exception as e:
@@ -432,4 +436,3 @@ def get_workflow() -> TeachingDocWorkflow:
     if _workflow_instance is None:
         _workflow_instance = TeachingDocWorkflow()
     return _workflow_instance
-

@@ -48,6 +48,17 @@
         .toast.success { border-left: 4px solid #27ae60; }
         .toast.error { border-left: 4px solid #e74c3c; }
         .toast.info { border-left: 4px solid #3498db; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 3000; }
+        .modal-overlay.active { display: flex; }
+        .modal { width: min(760px, 92vw); background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 16px 40px rgba(0,0,0,0.25); }
+        .modal-header { padding: 14px 18px; border-bottom: 1px solid #ecf0f1; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 16px; }
+        .chat-panel { height: 360px; overflow-y: auto; border: 1px solid #ecf0f1; border-radius: 8px; padding: 12px; background: #fafbfc; margin-bottom: 12px; }
+        .chat-bubble { max-width: 85%; padding: 10px 12px; border-radius: 8px; margin-bottom: 10px; line-height: 1.5; white-space: pre-wrap; }
+        .chat-user { margin-left: auto; background: #3498db; color: #fff; }
+        .chat-assistant { margin-right: auto; background: #eef2f7; color: #2c3e50; }
+        .chat-input-row { display: flex; gap: 10px; }
+        .chat-input-row textarea { flex: 1; min-height: 80px; resize: vertical; }
         @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
@@ -188,6 +199,8 @@
                     <div style="margin-top: 10px;">
                         <button class="btn btn-small btn-primary" onclick="viewDocument('${doc.doc_id}')"><i class="fas fa-eye"></i> 查看</button>
                         <button class="btn btn-small btn-primary" onclick="generateContent('${doc.doc_id}')"><i class="fas fa-cog"></i> 生成</button>
+                        <button class="btn btn-small btn-success" onclick="openRevisionDialog('${doc.doc_id}')"><i class="fas fa-comments"></i> 对话修改</button>
+                        <button class="btn btn-small btn-primary" onclick="exportDocument('${doc.doc_id}')"><i class="fas fa-file-export"></i> 导出</button>
                         <button class="btn btn-small btn-danger" onclick="deleteDocument('${doc.doc_id}')"><i class="fas fa-trash"></i> 删除</button>
                     </div>
                 </div>
@@ -410,6 +423,114 @@
             document.getElementById('docFile').click();
         });
     </script>
+
+    <div id="revisionModal" class="modal-overlay" onclick="closeRevisionDialog(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="revisionTitle">对话式修改PPT</h3>
+                <button class="btn btn-small btn-danger" onclick="closeRevisionDialog()"><i class="fas fa-times"></i> 关闭</button>
+            </div>
+            <div class="modal-body">
+                <div id="revisionChatPanel" class="chat-panel"></div>
+                <div class="chat-input-row">
+                    <textarea id="revisionInput" placeholder="例如：第3页改成案例讲解；增加一页课堂练习；语气更适合高中生"></textarea>
+                    <button class="btn btn-primary" onclick="sendRevisionInstruction()"><i class="fas fa-paper-plane"></i> 发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentRevisionDocId = null;
+        const revisionHistories = {};
+
+        function ensureRevisionHistory(docId) {
+            if (!revisionHistories[docId]) {
+                revisionHistories[docId] = [{
+                    role: 'assistant',
+                    content: '请告诉我你希望如何修改当前PPT。我会按你的要求更新内容并重新导出。'
+                }];
+            }
+            return revisionHistories[docId];
+        }
+
+        function renderRevisionChat(docId) {
+            const panel = document.getElementById('revisionChatPanel');
+            const history = ensureRevisionHistory(docId);
+            panel.innerHTML = history.map(msg => `
+                <div class="chat-bubble ${msg.role === 'user' ? 'chat-user' : 'chat-assistant'}">${escapeHtml(msg.content)}</div>
+            `).join('');
+            panel.scrollTop = panel.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function openRevisionDialog(docId) {
+            currentRevisionDocId = docId;
+            document.getElementById('revisionTitle').textContent = `对话式修改PPT（${docId}）`;
+            document.getElementById('revisionModal').classList.add('active');
+            renderRevisionChat(docId);
+            document.getElementById('revisionInput').focus();
+        }
+
+        function closeRevisionDialog() {
+            document.getElementById('revisionModal').classList.remove('active');
+            document.getElementById('revisionInput').value = '';
+        }
+
+        async function sendRevisionInstruction() {
+            if (!currentRevisionDocId) return;
+            const inputElem = document.getElementById('revisionInput');
+            const instruction = inputElem.value.trim();
+            if (!instruction) {
+                showToast('请输入修改要求', 'error');
+                return;
+            }
+
+            const history = ensureRevisionHistory(currentRevisionDocId);
+            history.push({ role: 'user', content: instruction });
+            renderRevisionChat(currentRevisionDocId);
+            inputElem.value = '';
+
+            try {
+                const response = await fetch('/api/ppt/revise', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        doc_id: currentRevisionDocId,
+                        instruction,
+                        conversation_history: history
+                    })
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.detail || result.message || '修改失败');
+                }
+
+                const reply = result.data?.assistant_reply || '已完成本轮修改。';
+                history.push({ role: 'assistant', content: `${reply}\n已重新导出，可直接下载最新版本。` });
+                renderRevisionChat(currentRevisionDocId);
+                showToast('PPT修改完成，已更新导出文件', 'success');
+                loadDocuments();
+            } catch (error) {
+                history.push({ role: 'assistant', content: `修改失败：${error.message}` });
+                renderRevisionChat(currentRevisionDocId);
+                showToast('对话修改失败', 'error');
+            }
+        }
+
+        document.getElementById('revisionInput').addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                sendRevisionInstruction();
+            }
+        });
+    </script>
 </body>
 </html>
-

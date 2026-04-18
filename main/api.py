@@ -19,11 +19,13 @@ import aiofiles
 from main.config import get_storage_config, get_system_config
 from main.models import (
     CreateDocumentRequest, GenerateContentRequest, ReviewRequest,
-    ExportRequest, APIResponse, AudienceLevel, TeachingDocument
+    ExportRequest, PPTRevisionRequest, APIResponse, AudienceLevel,
+    TeachingDocument, PPTContent, DocumentStatus, PPTLayout, SlideLayout
 )
 from main.workflow import get_workflow
 from main.materials import IndexManagementService
 from main.export import ExportManager
+from main.agents import LLMProvider, LayoutDesignerAgent, ImageMatchingAgent
 
 
 # ==================== FastAPI应用初始化 ====================
@@ -69,6 +71,15 @@ def validate_file_format(filename: str, allowed_formats: List[str]) -> bool:
     """验证文件格式"""
     ext = get_file_extension(filename)
     return ext in allowed_formats
+
+
+def extract_json_object(text: str) -> Dict[str, Any]:
+    """从LLM返回文本中提取JSON对象"""
+    start = text.find('{')
+    end = text.rfind('}') + 1
+    if start < 0 or end <= start:
+        raise ValueError("模型返回内容无法解析为JSON")
+    return json.loads(text[start:end])
 
 
 # ==================== API端点 ====================
@@ -365,6 +376,136 @@ async def generate_content(request: GenerateContentRequest, background_tasks: Ba
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.post("/api/ppt/revise", response_model=APIResponse)
+async def revise_ppt(request: PPTRevisionRequest):
+    """对已生成PPT进行对话式修改并重新导出"""
+    try:
+        doc = workflow.load_document(request.doc_id)
+        if not doc:
+            raise HTTPException(status_code=404, detail="文档不存在")
+        if not doc.ppt_content:
+            raise HTTPException(status_code=400, detail="文档尚未生成PPT内容")
+
+        llm_provider = LLMProvider()
+        template_name = doc.ppt_layout.template_name if doc.ppt_layout else "professional"
+        history_text = "\n".join(
+            f"{item.get('role', 'user')}: {item.get('content', '')}"
+            for item in request.conversation_history
+            if item.get('content')
+        ) or "无历史对话"
+
+        system_prompt = """你是一个专业的PPT编辑助手。你会根据用户提出的修改要求，更新当前PPT内容。
+你必须严格输出JSON对象，不要输出任何额外解释。JSON格式如下：
+{
+  "assistant_reply": "对用户的简短回复",
+  "ppt_content": {
+    "title": "string",
+    "subtitle": "string",
+    "slides": [
+      {
+        "title": "string",
+        "key_points": ["string"],
+        "speaker_notes": "string",
+        "image_descriptions": ["string"],
+        "teaching_tips": "string"
+      }
+    ],
+    "outline": "string",
+    "conclusion": "string",
+    "learning_outcomes": ["string"],
+    "assessment": "string"
+  }
+}
+要求：
+1. slides必须保留为数组，且每页至少有1条key_points。
+2. 仅按用户需求修改，不要无故重写全部内容。
+3. assistant_reply使用中文，简洁说明本轮改动。"""
+
+        user_message = f"""当前模板：{template_name}
+历史对话：
+{history_text}
+
+本轮用户需求：
+{request.instruction}
+
+当前PPT内容（JSON）：
+{json.dumps(doc.ppt_content.model_dump(), ensure_ascii=False)}"""
+
+        llm_response = llm_provider.chat(system_prompt, user_message)
+        parsed = extract_json_object(llm_response)
+        ppt_payload = parsed.get("ppt_content")
+        if not isinstance(ppt_payload, dict):
+            raise HTTPException(status_code=400, detail="模型未返回有效PPT结构")
+
+        doc.ppt_content = PPTContent(**ppt_payload)
+        assistant_reply = parsed.get("assistant_reply", "已根据你的要求完成本轮PPT修改。")
+
+        # 重新布局与配图
+        available_images = material_service.list_materials(material_type='image')
+        layout_designer = LayoutDesignerAgent()
+        image_matcher = ImageMatchingAgent()
+
+        layout_result = layout_designer.design_layout(
+            ppt_content=doc.ppt_content,
+            template_name=template_name,
+            available_images=available_images
+        )
+        image_matches = image_matcher.match_images(
+            ppt_content=doc.ppt_content,
+            available_images=available_images
+        )
+        image_map = {slide_idx: img_id for slide_idx, img_id in image_matches}
+
+        slide_layouts = []
+        for idx, slide in enumerate(doc.ppt_content.slides):
+            image_ids = [image_map[idx]] if idx in image_map else []
+            slide_layouts.append(
+                SlideLayout(
+                    slide_index=idx,
+                    title=slide.title,
+                    template=layout_result.get('template', template_name),
+                    image_ids=image_ids,
+                    image_positions=[],
+                    text_layout='default'
+                )
+            )
+
+        doc.ppt_layout = PPTLayout(
+            template_name=layout_result.get('template', template_name),
+            slides=slide_layouts,
+            color_scheme=layout_result.get('color_scheme', 'default'),
+            design_quality_score=layout_result.get('design_quality', 0.7)
+        )
+
+        # 重新导出
+        output_dir = Path(storage_config['output_dir'])
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f"{doc.doc_id}.pptx"
+        export_manager.export_document(document=doc, format='pptx', output_path=str(output_path))
+
+        doc.status = DocumentStatus.EXPORTED
+        doc.export_path = str(output_path)
+        doc.export_format = "pptx"
+        doc.updated_at = datetime.now()
+        workflow._save_document(doc)
+
+        return APIResponse(
+            success=True,
+            message="PPT修改并重新导出成功",
+            data={
+                "doc_id": doc.doc_id,
+                "assistant_reply": assistant_reply,
+                "slides_count": len(doc.ppt_content.slides),
+                "output_path": str(output_path),
+                "download_url": f"/api/download/{doc.doc_id}?format=pptx"
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # ==================== 审核接口 ====================
 
 @app.post("/api/review/submit", response_model=APIResponse)
@@ -504,6 +645,5 @@ async def get_config():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
 
 
